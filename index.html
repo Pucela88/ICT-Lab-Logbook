@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICT Lab Equipment Logbook - TTC DE LA SALLE BYUMBA</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #171717;
+            color: #f5f5f5;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f59e0b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+        
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
+        .icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+        }
+
+        .btn {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Datalist dropdown styling */
+        input[list]::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+        
+        input[list] {
+            padding-right: 2.5rem !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f59e0b' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 1rem center !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Simple SVG Icons as components
+        const Icons = {
+            Plus: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
+            X: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
+            Search: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
+            Filter: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>,
+            Download: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>,
+            Package: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
+            User: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
+            Calendar: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+            Clock: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+            Alert: () => <svg className="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        };
+
+        // Simple localStorage wrapper
+        const storage = {
+            get: (key) => {
+                try {
+                    const value = localStorage.getItem(key);
+                    return value ? { key, value, shared: false } : null;
+                } catch (error) {
+                    return null;
+                }
+            },
+            set: (key, value) => {
+                try {
+                    localStorage.setItem(key, value);
+                    return { key, value, shared: false };
+                } catch (error) {
+                    return null;
+                }
+            }
+        };
+
+        const EquipmentLogbook = () => {
+            const [entries, setEntries] = useState([]);
+            const [equipment, setEquipment] = useState([]);
+            const [showAddEntry, setShowAddEntry] = useState(false);
+            const [showAddEquipment, setShowAddEquipment] = useState(false);
+            const [showArchive, setShowArchive] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [filterEquipment, setFilterEquipment] = useState('all');
+            const [loading, setLoading] = useState(true);
+            const [equipmentInput, setEquipmentInput] = useState('');
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            const loadData = () => {
+                try {
+                    const equipmentData = storage.get('equipment-list');
+                    const entriesData = storage.get('usage-entries');
+                    
+                    if (equipmentData) {
+                        setEquipment(JSON.parse(equipmentData.value));
+                    } else {
+                        const sampleEquipment = [
+                            { id: '1', name: 'Desktop Computer', category: 'ICT Hardware', status: 'available', archived: false },
+                            { id: '2', name: 'Laptop', category: 'ICT Hardware', status: 'available', archived: false },
+                            { id: '3', name: 'Projector', category: 'Presentation', status: 'available', archived: false },
+                            { id: '4', name: 'Network Switch', category: 'Networking', status: 'available', archived: false },
+                            { id: '5', name: 'Printer', category: 'Peripherals', status: 'available', archived: false }
+                        ];
+                        setEquipment(sampleEquipment);
+                        storage.set('equipment-list', JSON.stringify(sampleEquipment));
+                    }
+                    
+                    if (entriesData) {
+                        setEntries(JSON.parse(entriesData.value));
+                    }
+                } catch (error) {
+                    console.log('Initializing new logbook');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const saveEquipment = (newEquipment) => {
+                try {
+                    storage.set('equipment-list', JSON.stringify(newEquipment));
+                    setEquipment(newEquipment);
+                } catch (error) {
+                    console.error('Failed to save equipment:', error);
+                }
+            };
+
+            const saveEntries = (newEntries) => {
+                try {
+                    storage.set('usage-entries', JSON.stringify(newEntries));
+                    setEntries(newEntries);
+                } catch (error) {
+                    console.error('Failed to save entries:', error);
+                }
+            };
+
+            const addEquipment = (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const newEquipment = {
+                    id: Date.now().toString(),
+                    name: formData.get('equipmentName'),
+                    category: formData.get('category'),
+                    status: 'available',
+                    archived: false
+                };
+                
+                const updated = [...equipment, newEquipment];
+                saveEquipment(updated);
+                setShowAddEquipment(false);
+                e.target.reset();
+            };
+
+            const toggleArchive = (equipmentId) => {
+                const updated = equipment.map(eq =>
+                    eq.id === equipmentId ? { ...eq, archived: !eq.archived } : eq
+                );
+                saveEquipment(updated);
+            };
+
+            const deleteEquipment = (equipmentId) => {
+                if (!window.confirm('Are you sure you want to permanently delete this equipment? This cannot be undone.')) {
+                    return;
+                }
+                const updated = equipment.filter(eq => eq.id !== equipmentId);
+                saveEquipment(updated);
+            };
+
+            const addEntry = (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const equipmentName = equipmentInput.trim();
+                
+                if (!equipmentName) {
+                    alert('Please enter or select an equipment name');
+                    return;
+                }
+                
+                // Check if equipment exists or create new one
+                let equipmentId;
+                const existingEquipment = equipment.find(eq => 
+                    eq.name.toLowerCase() === equipmentName.toLowerCase() && !eq.archived
+                );
+                
+                if (existingEquipment) {
+                    equipmentId = existingEquipment.id;
+                } else {
+                    // Auto-create new equipment
+                    equipmentId = Date.now().toString();
+                    const newEquipmentItem = {
+                        id: equipmentId,
+                        name: equipmentName,
+                        category: 'General',
+                        status: 'available',
+                        archived: false
+                    };
+                    const updatedEquipment = [...equipment, newEquipmentItem];
+                    saveEquipment(updatedEquipment);
+                }
+                
+                const newEntry = {
+                    id: Date.now().toString(),
+                    equipmentId: equipmentId,
+                    userName: formData.get('userName'),
+                    purpose: formData.get('purpose'),
+                    checkOut: formData.get('checkOut'),
+                    checkIn: formData.get('checkIn') || null,
+                    status: formData.get('checkIn') ? 'completed' : 'in-use',
+                    notes: formData.get('notes')
+                };
+                
+                const updated = [newEntry, ...entries];
+                saveEntries(updated);
+                setShowAddEntry(false);
+                setEquipmentInput('');
+                e.target.reset();
+            };
+
+            const checkInEquipment = (entryId) => {
+                const now = new Date().toISOString().slice(0, 16);
+                const updated = entries.map(entry =>
+                    entry.id === entryId ? { ...entry, checkIn: now, status: 'completed' } : entry
+                );
+                saveEntries(updated);
+            };
+
+            const getEquipmentName = (equipmentId) => {
+                const item = equipment.find(e => e.id === equipmentId);
+                return item ? item.name : 'Unknown';
+            };
+
+            const filteredEntries = entries.filter(entry => {
+                const matchesSearch = 
+                    entry.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    getEquipmentName(entry.equipmentId).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    entry.purpose.toLowerCase().includes(searchTerm.toLowerCase());
+                
+                const matchesFilter = filterEquipment === 'all' || entry.equipmentId === filterEquipment;
+                
+                return matchesSearch && matchesFilter;
+            });
+
+            const activeEquipment = equipment.filter(eq => !eq.archived);
+            const archivedEquipment = equipment.filter(eq => eq.archived);
+
+            const exportToCSV = () => {
+                const headers = ['Equipment', 'User', 'Purpose', 'Check Out', 'Check In', 'Status', 'Notes'];
+                const rows = entries.map(entry => [
+                    getEquipmentName(entry.equipmentId),
+                    entry.userName,
+                    entry.purpose,
+                    new Date(entry.checkOut).toLocaleString(),
+                    entry.checkIn ? new Date(entry.checkIn).toLocaleString() : 'In Use',
+                    entry.status,
+                    entry.notes || ''
+                ]);
+                
+                const csvContent = [
+                    headers.join(','),
+                    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+                ].join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `equipment-log-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+            };
+
+            if (loading) {
+                return (
+                    <div style={{ minHeight: '100vh', background: '#171717', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ color: '#fbbf24', fontSize: '1.25rem', fontFamily: 'monospace' }}>Loading logbook...</div>
+                    </div>
+                );
+            }
+
+            return (
+                <div style={{ minHeight: '100vh', background: '#171717', color: '#f5f5f5' }}>
+                    {/* Header */}
+                    <div style={{ background: 'linear-gradient(to right, #262626, #171717)', borderBottom: '4px solid #f59e0b', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                        <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '2rem 1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                                <div>
+                                    <h1 style={{ fontSize: '3rem', fontWeight: 'bold', color: '#fbbf24', marginBottom: '0.5rem', fontFamily: 'Impact, sans-serif', textTransform: 'uppercase', letterSpacing: '3px' }}>
+                                        Equipment Logbook
+                                    </h1>
+                                    <p style={{ color: '#a3a3a3', fontSize: '0.875rem' }}>Track | Monitor | Control</p>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                    <button
+                                        onClick={() => setShowAddEquipment(true)}
+                                        className="btn"
+                                        style={{ background: '#404040', color: '#fbbf24', padding: '0.75rem 1.5rem', border: '2px solid #f59e0b', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                    >
+                                        <Icons.Plus />
+                                        ADD EQUIPMENT
+                                    </button>
+                                    <button
+                                        onClick={() => setShowArchive(true)}
+                                        className="btn"
+                                        style={{ background: '#404040', color: '#60a5fa', padding: '0.75rem 1.5rem', border: '2px solid #3b82f6', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                    >
+                                        <Icons.Package />
+                                        ARCHIVE ({archivedEquipment.length})
+                                    </button>
+                                    <button
+                                        onClick={() => setShowAddEntry(true)}
+                                        className="btn"
+                                        style={{ background: '#f59e0b', color: '#171717', padding: '0.75rem 1.5rem', border: '2px solid #d97706', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                    >
+                                        <Icons.Plus />
+                                        NEW ENTRY
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats Bar */}
+                    <div style={{ background: '#262626', borderBottom: '1px solid #404040' }}>
+                        <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '1rem 1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                <div style={{ background: '#171717', padding: '1rem', borderLeft: '4px solid #f59e0b' }}>
+                                    <div style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#fbbf24' }}>{activeEquipment.length}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#a3a3a3', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Equipment</div>
+                                </div>
+                                <div style={{ background: '#171717', padding: '1rem', borderLeft: '4px solid #22c55e' }}>
+                                    <div style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#4ade80' }}>{entries.filter(e => e.status === 'completed').length}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#a3a3a3', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completed Uses</div>
+                                </div>
+                                <div style={{ background: '#171717', padding: '1rem', borderLeft: '4px solid #fb923c' }}>
+                                    <div style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#fb923c' }}>{entries.filter(e => e.status === 'in-use').length}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#a3a3a3', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Currently In Use</div>
+                                </div>
+                                <div style={{ background: '#171717', padding: '1rem', borderLeft: '4px solid #60a5fa' }}>
+                                    <div style={{ fontSize: '1.875rem', fontWeight: 'bold', color: '#60a5fa' }}>{entries.length}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#a3a3a3', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Entries</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '1.5rem' }}>
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1', minWidth: '250px', position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#737373' }}>
+                                    <Icons.Search />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search by user, equipment, or purpose..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    style={{ width: '100%', background: '#262626', color: '#f5f5f5', paddingLeft: '3rem', paddingRight: '1rem', paddingTop: '0.75rem', paddingBottom: '0.75rem', border: '2px solid #404040', outline: 'none' }}
+                                />
+                            </div>
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#737373' }}>
+                                    <Icons.Filter />
+                                </div>
+                                <select
+                                    value={filterEquipment}
+                                    onChange={(e) => setFilterEquipment(e.target.value)}
+                                    style={{ background: '#262626', color: '#f5f5f5', paddingLeft: '3rem', paddingRight: '2rem', paddingTop: '0.75rem', paddingBottom: '0.75rem', border: '2px solid #404040', outline: 'none', cursor: 'pointer' }}
+                                >
+                                    <option value="all">All Equipment</option>
+                                    {activeEquipment.map(eq => (
+                                        <option key={eq.id} value={eq.id}>{eq.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button
+                                onClick={exportToCSV}
+                                className="btn"
+                                style={{ background: '#262626', color: '#f5f5f5', padding: '0.75rem 1.5rem', border: '2px solid #404040', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                <Icons.Download />
+                                EXPORT CSV
+                            </button>
+                        </div>
+
+                        {/* Entries List */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {filteredEntries.length === 0 ? (
+                                <div style={{ background: '#262626', border: '2px solid #404040', padding: '3rem', textAlign: 'center' }}>
+                                    <div style={{ margin: '0 auto 1rem', color: '#525252', width: '48px', height: '48px' }}>
+                                        <Icons.Alert />
+                                    </div>
+                                    <p style={{ color: '#a3a3a3', fontSize: '1.125rem' }}>No entries found</p>
+                                    <p style={{ color: '#737373', fontSize: '0.875rem', marginTop: '0.5rem' }}>Create a new entry to get started</p>
+                                </div>
+                            ) : (
+                                filteredEntries.map((entry, index) => (
+                                    <div
+                                        key={entry.id}
+                                        style={{
+                                            background: '#262626',
+                                            borderLeft: `4px solid ${entry.status === 'in-use' ? '#fb923c' : '#22c55e'}`,
+                                            padding: '1.25rem',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                            animation: `slideIn 0.3s ease-out ${index * 0.05}s both`
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                                            <div style={{ flex: '1', minWidth: '250px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                                                    <span style={{ background: '#f59e0b', color: '#171717', padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                                        {getEquipmentName(entry.equipmentId)}
+                                                    </span>
+                                                    <span style={{ background: entry.status === 'in-use' ? '#fb923c' : '#22c55e', color: '#171717', padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                                                        {entry.status}
+                                                    </span>
+                                                </div>
+                                                
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '0.75rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d4d4d4' }}>
+                                                        <span style={{ color: '#f59e0b' }}><Icons.User /></span>
+                                                        <span style={{ fontSize: '0.875rem' }}>{entry.userName}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d4d4d4' }}>
+                                                        <span style={{ color: '#f59e0b' }}><Icons.Calendar /></span>
+                                                        <span style={{ fontSize: '0.875rem' }}>{new Date(entry.checkOut).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d4d4d4' }}>
+                                                        <span style={{ color: '#f59e0b' }}><Icons.Clock /></span>
+                                                        <span style={{ fontSize: '0.875rem' }}>{new Date(entry.checkOut).toLocaleTimeString()}</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div style={{ color: '#a3a3a3', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                                                    <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Purpose:</span> {entry.purpose}
+                                                </div>
+                                                
+                                                {entry.notes && (
+                                                    <div style={{ color: '#737373', fontSize: '0.75rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                                                        <span style={{ color: '#f59e0b' }}>Notes:</span> {entry.notes}
+                                                    </div>
+                                                )}
+                                                
+                                                {entry.checkIn && (
+                                                    <div style={{ color: '#4ade80', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                                                        ✓ Returned: {new Date(entry.checkIn).toLocaleString()}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {entry.status === 'in-use' && (
+                                                <button
+                                                    onClick={() => checkInEquipment(entry.id)}
+                                                    className="btn"
+                                                    style={{ background: '#22c55e', color: '#171717', padding: '0.5rem 1rem', fontWeight: 'bold', fontSize: '0.875rem', border: '2px solid #16a34a' }}
+                                                >
+                                                    CHECK IN
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Add Equipment Modal */}
+                    {showAddEquipment && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1.5rem' }}>
+                            <div style={{ background: '#262626', border: '4px solid #f59e0b', maxWidth: '28rem', width: '100%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                                <div style={{ background: '#f59e0b', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#171717', textTransform: 'uppercase', fontFamily: 'Impact, sans-serif' }}>
+                                        Add Equipment
+                                    </h2>
+                                    <button onClick={() => setShowAddEquipment(false)} style={{ color: '#171717', cursor: 'pointer', background: 'none', border: 'none' }}>
+                                        <Icons.X />
+                                    </button>
+                                </div>
+                                
+                                <form onSubmit={addEquipment} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', color: '#fbbf24', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Equipment Name</label>
+                                        <input
+                                            type="text"
+                                            name="equipmentName"
+                                            required
+                                            style={{ width: '100%', background: '#171717', color: '#f5f5f5', padding: '0.75rem 1rem', border: '2px solid #404040', outline: 'none' }}
+                                            placeholder="e.g., CNC Machine"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label style={{ display: 'block', color: '#fbbf24', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Category</label>
+                                        <input
+                                            type="text"
+                                            name="category"
+                                            required
+                                            style={{ width: '100%', background: '#171717', color: '#f5f5f5', padding: '0.75rem 1rem', border: '2px solid #404040', outline: 'none' }}
+                                            placeholder="e.g., Fabrication"
+                                        />
+                                    </div>
+                                    
+                                    <button
+                                        type="submit"
+                                        className="btn"
+                                        style={{ width: '100%', background: '#f59e0b', color: '#171717', padding: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', border: '2px solid #d97706' }}
+                                    >
+                                        Add Equipment
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Archive Modal */}
+                    {showArchive && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1.5rem', overflowY: 'auto' }}>
+                            <div style={{ background: '#262626', border: '4px solid #3b82f6', maxWidth: '50rem', width: '100%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', margin: '1.5rem 0', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ background: '#3b82f6', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#171717', textTransform: 'uppercase', fontFamily: 'Impact, sans-serif' }}>
+                                        Equipment Management
+                                    </h2>
+                                    <button onClick={() => setShowArchive(false)} style={{ color: '#171717', cursor: 'pointer', background: 'none', border: 'none' }}>
+                                        <Icons.X />
+                                    </button>
+                                </div>
+                                
+                                <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
+                                    {/* Active Equipment Section */}
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <h3 style={{ color: '#22c55e', fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase', borderBottom: '2px solid #22c55e', paddingBottom: '0.5rem' }}>
+                                            Active Equipment ({activeEquipment.length})
+                                        </h3>
+                                        {activeEquipment.length === 0 ? (
+                                            <div style={{ background: '#171717', padding: '2rem', textAlign: 'center', border: '2px solid #404040' }}>
+                                                <p style={{ color: '#a3a3a3' }}>No active equipment. Add equipment using "ADD EQUIPMENT" button.</p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                {activeEquipment.map(eq => (
+                                                    <div key={eq.id} style={{ background: '#171717', padding: '1rem', border: '2px solid #404040', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ color: '#f5f5f5', fontWeight: 'bold', fontSize: '1rem', marginBottom: '0.25rem' }}>{eq.name}</div>
+                                                            <div style={{ color: '#a3a3a3', fontSize: '0.875rem' }}>{eq.category}</div>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button
+                                                                onClick={() => toggleArchive(eq.id)}
+                                                                className="btn"
+                                                                style={{ background: '#fb923c', color: '#171717', padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 'bold', border: '2px solid #f97316' }}
+                                                            >
+                                                                ARCHIVE
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Archived Equipment Section */}
+                                    <div>
+                                        <h3 style={{ color: '#fb923c', fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase', borderBottom: '2px solid #fb923c', paddingBottom: '0.5rem' }}>
+                                            Archived Equipment ({archivedEquipment.length})
+                                        </h3>
+                                        {archivedEquipment.length === 0 ? (
+                                            <div style={{ background: '#171717', padding: '2rem', textAlign: 'center', border: '2px solid #404040' }}>
+                                                <p style={{ color: '#a3a3a3' }}>No archived equipment.</p>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                {archivedEquipment.map(eq => (
+                                                    <div key={eq.id} style={{ background: '#171717', padding: '1rem', border: '2px solid #404040', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', opacity: 0.7 }}>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ color: '#f5f5f5', fontWeight: 'bold', fontSize: '1rem', marginBottom: '0.25rem' }}>{eq.name}</div>
+                                                            <div style={{ color: '#a3a3a3', fontSize: '0.875rem' }}>{eq.category}</div>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                            <button
+                                                                onClick={() => toggleArchive(eq.id)}
+                                                                className="btn"
+                                                                style={{ background: '#22c55e', color: '#171717', padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 'bold', border: '2px solid #16a34a' }}
+                                                            >
+                                                                RESTORE
+                                                            </button>
+                                                            <button
+                                                                onClick={() => deleteEquipment(eq.id)}
+                                                                className="btn"
+                                                                style={{ background: '#ef4444', color: '#f5f5f5', padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: 'bold', border: '2px solid #dc2626' }}
+                                                            >
+                                                                DELETE
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#1e3a5f', border: '2px solid #3b82f6' }}>
+                                        <p style={{ color: '#93c5fd', fontSize: '0.875rem', marginBottom: '0.5rem' }}><strong>💡 About Archive:</strong></p>
+                                        <p style={{ color: '#bfdbfe', fontSize: '0.875rem' }}>
+                                            • Archived equipment is hidden from dropdowns and filters<br/>
+                                            • All historical usage data is preserved<br/>
+                                            • You can restore equipment anytime<br/>
+                                            • Delete only removes equipment permanently (use carefully!)
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Add Entry Modal - NOW WITH EDITABLE INPUT */}
+                    {showAddEntry && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '1.5rem', overflowY: 'auto' }}>
+                            <div style={{ background: '#262626', border: '4px solid #f59e0b', maxWidth: '42rem', width: '100%', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', margin: '1.5rem 0' }}>
+                                <div style={{ background: '#f59e0b', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#171717', textTransform: 'uppercase', fontFamily: 'Impact, sans-serif' }}>
+                                        New Usage Entry
+                                    </h2>
+                                    <button onClick={() => setShowAddEntry(false)} style={{ color: '#171717', cursor: 'pointer', background: 'none', border: 'none' }}>
+                                        <Icons.X />
+                                    </button>
+                                </div>
+                                
+                                <form onSubmit={addEntry} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', color: '#fbbf24', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Equipment * (Type or Select)</label>
+                                            <input
+                                                type="text"
+                                                list="equipment-list"
+                                                value={equipmentInput}
+                                                onChange={(e) => setEquipmentInput(e.target.value)}
+                                                required
+                                                style={{ width: '100%', background: '#171717', color: '#f5f5f5', padding: '0.75rem 1rem', border: '2px solid #404040', outline: 'none' }}
+                                                placeholder="Type equipment name or select from list..."
+                                            />
+                                            <datalist id="equipment-list">
+                                                {activeEquipment.map(eq => (
+                                                    <option key={eq.id} value={eq.name} />
+                                                ))}
+                                            </datalist>
+                                            <p style={{ fontSize: '0.75rem', color: '#a3a3a3', marginTop: '0.25rem' }}>You can type a new equipment name or select from existing ones</p>
+                                        </div>
+                                        
+                                        <div>
+                                            <label style={{ display: 'block', color: '#fbbf24', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase' }}>User Name</label>
+                                            <input
+                                                type="text"
+                                                name="userName"
+                                                required
+                                                style={{ width: '100%', background: '#171717', color: '#f5f5f5', padding: '0.75rem 1rem', border: '2px solid #404040', outline: 'none' }}
+                                                placeholder="Your name"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label style={{ display: 'block', color: '#fbbf24', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Purpose</label>
+                                        <input
+                                            type="text"
+                                            name="purpose"
+                                            required
+                                            style={{ width: '100%', background: '#171717', color: '#f5f5f5', padding: '0.75rem 1rem', border: '2px solid #404040', outline: 'none' }}
+                                            placeholder="What are you using this equipment for?"
+                                        />
+                                    </div>
+                                    
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', color: '#fbbf24', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Check Out Time</label>
+                                            <input
+                                                type="datetime-local"
+                                                name="checkOut"
+                                                required
+                                                defaultValue={new Date().toISOString().slice(0, 16)}
+                                                style={{ width: '100%', background: '#171717', color: '#f5f5f5', padding: '0.75rem 1rem', border: '2px solid #404040', outline: 'none' }}
+                                            />
+                                        </div>
+                                        
+                                        <div>
+                                            <label style={{ display: 'block', color: '#fbbf24', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Check In Time (Optional)</label>
+                                            <input
+                                                type="datetime-local"
+                                                name="checkIn"
+                                                style={{ width: '100%', background: '#171717', color: '#f5f5f5', padding: '0.75rem 1rem', border: '2px solid #404040', outline: 'none' }}
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label style={{ display: 'block', color: '#fbbf24', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Notes (Optional)</label>
+                                        <textarea
+                                            name="notes"
+                                            rows="3"
+                                            style={{ width: '100%', background: '#171717', color: '#f5f5f5', padding: '0.75rem 1rem', border: '2px solid #404040', outline: 'none', resize: 'none' }}
+                                            placeholder="Any additional notes..."
+                                        ></textarea>
+                                    </div>
+                                    
+                                    <button
+                                        type="submit"
+                                        className="btn"
+                                        style={{ width: '100%', background: '#f59e0b', color: '#171717', padding: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', border: '2px solid #d97706' }}
+                                    >
+                                        Create Entry
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<EquipmentLogbook />, document.getElementById('root'));
+    </script>
+</body>
+</html>
